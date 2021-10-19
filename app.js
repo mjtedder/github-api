@@ -2,6 +2,13 @@ const axios = require('axios');
 const inquirer = require('inquirer');
 require('dotenv').config();
 
+const dataObject = {
+    user: '',
+    repo: '',
+    prData: [],
+    commitData: []
+}
+
 function startApp() {
     const questions = [
         {
@@ -17,6 +24,8 @@ function startApp() {
     ]
     inquirer.prompt(questions)
     .then((answers) => {
+        dataObject.user = answers.username;
+        dataObject.repo = answers.repository;
         getOpenPullRequestData(answers.username, answers.repository);
     }).catch((err) => {
         console.error(err);
@@ -35,32 +44,39 @@ async function getOpenPullRequestData(user, repo) {
         const openPullRequests = response.data.filter(pullRequest => {
             return pullRequest.state;
         })
-        console.log(`The repository ${repo} for user ${user} currently has ${openPullRequests.length} open PRs`);
-        promptUserToSelectPR(repo, user, openPullRequests);
-        
+        if (openPullRequests.length) {
+            dataObject.prData = openPullRequests;
+            console.log(`The repository ${repo} for user ${user} currently has ${openPullRequests.length} open PRs`);
+            promptUserToSelectPR();
+        } else {
+            console.log(`The repository ${repo} does not currently have any open PRs.`)
+            startApp();
+        }    
     } catch (error) {
         console.error(error);
     }
 }
 
-async function getCommitsPerPullRequest(username, repository, data, prNumber) {
+async function getCommitsPerPullRequest(prNumber) {
+    const { user, repo } = dataObject;
     try {
-        const response = await axios.get(`https://api.github.com/repos/${username}/${repository}/pulls/${prNumber}/commits`, {
+        const response = await axios.get(`https://api.github.com/repos/${user}/${repo}/pulls/${prNumber}/commits`, {
             headers: {
                 'Authorization': process.env.client_secret,
-                'User-Agent': username,
+                'User-Agent': user,
                 'Accept': 'application/vnd.github.v3+json'
             }
         })
-        console.log(`The Pull Request #${prNumber} in repository ${repository} for user ${username} has ${response.data.length} commits`);   
+        dataObject.commitData = response.data;
+        console.log(`The Pull Request #${prNumber} in repository ${repo} for user ${user} has ${response.data.length} commits`);   
     } catch (error) {
         console.error(error);
     }
 }
 
-function promptUserToSelectPR(repo, user, pullRequests) {
-    //console.log(pullRequests)
-    const prNumbers = pullRequests.map(pr => pr.number).sort((a,b) => a - b);
+function promptUserToSelectPR() {
+    const { prData } = dataObject;
+    const prNumbers = prData.map(pr => pr.number).sort((a,b) => a - b);
     console.log(prNumbers);
     inquirer.prompt(
         {
@@ -69,7 +85,7 @@ function promptUserToSelectPR(repo, user, pullRequests) {
             message: 'Choose the Pull Request number you would like to view',
             choices: prNumbers
         }).then(answer => {
-            getCommitsPerPullRequest(user, repo, pullRequests, answer.details);
+            getCommitsPerPullRequest(answer.details);
         })
 }
 
