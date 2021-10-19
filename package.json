@@ -1,0 +1,25 @@
+{
+  "name": "github-api",
+  "version": "1.0.0",
+  "description": "A Node.js application that allows the user to get GitHub repository data",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mjtedder/github-api.git"
+  },
+  "author": "Matt Tedder",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mjtedder/github-api/issues"
+  },
+  "homepage": "https://github.com/mjtedder/github-api#readme",
+  "devDependencies": {
+    "jest": "^27.3.0"
+  },
+  "dependencies": {
+    "inquirer": "^8.2.0"
+  }
+}
