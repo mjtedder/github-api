@@ -1,3 +1,4 @@
+const axios = require('axios');
 const inquirer = require('inquirer');
 
 function startApp() {
@@ -15,14 +16,28 @@ function startApp() {
     ]
     inquirer.prompt(questions)
     .then((answers) => {
-        retrieveGitHubData(answers.username, answers.repository);
+        getOpenPullRequestData(answers.username, answers.repository);
     }).catch((err) => {
         console.error(err);
     })
 }
 
-function retrieveGitHubData(user, repo) {
-    console.log(user, repo);
+async function getOpenPullRequestData(user, repo) {
+    try {
+        const response = await axios.get(`https://api.github.com/repos/${user}/${repo}/pulls`, {
+            headers: {
+                'User-Agent': user,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        })
+        const openPRCount = response.data.filter(pullRequest => {
+            return pullRequest.state;
+        })
+        console.log(`The repository ${repo} for user ${user} currently has ${openPRCount.length} open PRs`);
+    } catch (error) {
+        console.error(error);
+    }
+    
 }
 
 startApp();
