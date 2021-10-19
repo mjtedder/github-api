@@ -36,29 +36,41 @@ async function getOpenPullRequestData(user, repo) {
             return pullRequest.state;
         })
         console.log(`The repository ${repo} for user ${user} currently has ${openPullRequests.length} open PRs`);
-        getCommitsPerPullRequest(user, repo, openPullRequests);
+        promptUserToSelectPR(repo, user, openPullRequests);
+        
     } catch (error) {
         console.error(error);
     }
 }
 
-function getCommitsPerPullRequest(username, repository, data) {
-    let returnedCommits = [];
-    let promises = [];
-    data.forEach(pullRequest => {
-        promises.push(
-            axios.get(`https://api.github.com/repos/${username}/${repository}/pulls/${pullRequest.number}/commits`, {
-                headers: {
-                    'Authorization': process.env.client_secret,
-                    'User-Agent': username,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            }).then(response => {
-                returnedCommits.push(response.data)
-            })
-        )
-    })
-    Promise.all(promises).then(() => console.log(returnedCommits))
+async function getCommitsPerPullRequest(username, repository, data, prNumber) {
+    try {
+        const response = await axios.get(`https://api.github.com/repos/${username}/${repository}/pulls/${prNumber}/commits`, {
+            headers: {
+                'Authorization': process.env.client_secret,
+                'User-Agent': username,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        })
+        console.log(`The Pull Request #${prNumber} in repository ${repository} for user ${username} has ${response.data.length} commits`);   
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+function promptUserToSelectPR(repo, user, pullRequests) {
+    //console.log(pullRequests)
+    const prNumbers = pullRequests.map(pr => pr.number).sort((a,b) => a - b);
+    console.log(prNumbers);
+    inquirer.prompt(
+        {
+            type: 'list',
+            name: 'details',
+            message: 'Choose the Pull Request number you would like to view',
+            choices: prNumbers
+        }).then(answer => {
+            getCommitsPerPullRequest(user, repo, pullRequests, answer.details);
+        })
 }
 
 startApp();
